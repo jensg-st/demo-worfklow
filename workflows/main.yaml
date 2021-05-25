@@ -1,0 +1,6 @@
+id: install-app
+description: ""
+states:
+    - id: helloworld
+      type: noop
+      transform: '{ result: "Hello world!" }'

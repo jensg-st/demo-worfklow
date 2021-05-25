@@ -1,0 +1,22 @@
+name: Sync Workflows
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+jobs:
+  hello_world_job:
+    runs-on: ubuntu-latest
+    name: sync workflows
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: sync
+        id: sync
+        with:
+          server: playground.direktiv.io
+          namespace: jens
+          sync: workflows
+          token: ${{ secrets.DIREKTIV_TOKEN }}
+        uses: vorteil/direktiv-actions-ghsync@v1

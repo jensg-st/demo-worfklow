@@ -1,0 +1,20 @@
+name: Execute Workflow
+on:
+  workflow_dispatch:
+jobs:
+  hello_world_job:
+    runs-on: ubuntu-latest
+    name: workflow execute
+    steps:
+      - name: execute
+        id: execute
+        with:
+          wait: true
+          server: playground.direktiv.io
+          workflow: jens/action
+          token: ${{ secrets.DIREKTIV_TOKEN }}
+          data: |
+            {
+              "data": "one"
+            }
+        uses: vorteil/direktiv-actions-ghexec@v1
