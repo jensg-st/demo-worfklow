@@ -16,7 +16,7 @@ jobs:
         id: sync
         with:
           server: playground.direktiv.io
-          namespace: jens
+          namespace: github
           sync: workflows
           token: ${{ secrets.DIREKTIV_TOKEN }}
         uses: vorteil/direktiv-actions-ghsync@v1
