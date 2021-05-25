@@ -1,5 +1,5 @@
 id: install-app
-description: ""
+description: "base workflow"
 states:
     - id: helloworld
       type: noop
