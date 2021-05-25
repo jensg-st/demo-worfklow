@@ -11,10 +11,6 @@ jobs:
         with:
           wait: true
           server: playground.direktiv.io
-          workflow: jens/action
+          workflow: github/install-app
           token: ${{ secrets.DIREKTIV_TOKEN }}
-          data: |
-            {
-              "data": "one"
-            }
         uses: vorteil/direktiv-actions-ghexec@v1
