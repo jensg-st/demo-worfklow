@@ -1,0 +1,87 @@
+functions:
+- id: http-request
+  image: gcr.io/direktiv/functions/http-request:1.0
+  type: knative-workflow
+- id: magick
+  image: gcr.io/direktiv/functions/image-magick:1.0
+  type: knative-workflow
+  size: large
+- id: get-image
+  workflow: image/image
+  type: subflow
+
+states:
+
+# get a superb dad joke
+- id: http-request
+  type: action
+  action:
+    function: http-request
+    input: 
+      url: https://icanhazdadjoke.com/
+      headers:
+        Accept: application/json
+  transform:
+    joke: jq(.return[0].result.joke)
+  transition: fetch-image
+  
+# call subflow to fetch image for joke using the joke text as prompt
+- id: fetch-image
+  type: action
+  action:
+    function: get-image
+    input:
+      model: stability-ai/stable-diffusion
+      version: f178fa7a1ae43a9a9af01b833b9d2ecf97b1bcb0acfd2dc5dd04895e042863f1
+      # model: lambdal/text-to-pokemon
+      # version: 3554d9e699e09693d3fa334a79c58be9a405dd021d3e11281256d53185868912
+      text: jq(.joke)
+  transition: dl-image
+
+# download the image after success
+- id: dl-image
+  type: action
+  action:  
+    function: http-request
+    input: 
+      url: jq(.return.return.output)
+  transform: 'jq(. + { pic: .return[0].result})'
+  transition: store-image
+
+# store the image in direktiv variable
+- id: store-image
+  type: setter
+  variables:
+  - key: image
+    scope: workflow
+    mimeType: application/octet-stream
+    value: 'jq(.pic)'
+  transform: jq(del(.pic))
+  transition: label
+
+
+# image-magick to add text to image
+- id: label
+  type: action
+  log: jq(.)
+  action:
+    function: magick
+    files:
+    - key: image
+      scope: workflow
+      as: image.png
+    input:
+      commands:
+      - command: |- 
+          convert -background '#0008' -fill white -gravity center -size 768x200 caption:"jq(.joke)" image.png +swap -gravity south -composite image2.png
+      - command: mv image2.png out/workflow/
+  transition: get
+
+# return the image to present it via browser
+- id: get
+  type: getter
+  variables:
+  - key: image2.png
+    scope: workflow
+  transform: 
+    pic: jq(.var."image2.png")

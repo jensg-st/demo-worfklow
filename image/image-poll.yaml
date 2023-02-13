@@ -1,0 +1,46 @@
+functions:
+- id: http-request
+  image: gcr.io/direktiv/functions/http-request:1.0
+  type: knative-workflow
+
+states:
+
+- id: validate
+  type: validate
+  schema:
+    title: Image Poll
+    type: object
+    required: ["url"]
+    properties:
+      url:
+        type: string
+  transition: request
+
+# simple request
+- id: request
+  type: action
+  action:
+    secrets: ["replicate"]
+    function: http-request
+    input: 
+      url: jq(.url)
+      headers:
+        Authorization: Token jq(.secrets.replicate)
+  transform:
+    status: jq(.return[0].result.status)
+    error: jq(.return[0].result.error // "")
+    output: jq(.return[0].result.output[0] // "")
+  transition: check
+
+# check for success
+- id: check
+  type: switch
+  defaultTransition: error
+  conditions:
+  - condition: 'jq(.status == "succeeded")'
+  
+# throw an error so the parent can retry
+- id: error
+  type: error
+  error: imgError
+  message: image error jq(.error)

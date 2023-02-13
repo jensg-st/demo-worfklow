@@ -1,0 +1,95 @@
+functions:
+- id: news
+  image: gcr.io/direktiv/functions/rss-reader:1.0
+  type: knative-workflow
+
+- id: summary
+  image: gcr.io/direktiv/functions/htmlsummary:1.0
+  type: knative-workflow
+
+- id: pandoc
+  image: gcr.io/direktiv/functions/pandoc:1.0
+  type: knative-workflow
+
+states:
+
+# get the rss feed and the latest news from it
+- id: rss-reader
+  type: action
+  action:
+    function: news
+    input: 
+      rss: https://news.un.org/feed/subscribe/en/news/region/americas/feed/rss.xml
+      # rss: https://www.theonion.com/rss
+      limit: 1
+    retries:
+      max_attempts: 30
+      delay: PT3S
+      codes: [".*"]
+  transform:
+    news: jq(.return."rss-reader".Channel.Items[0].Link)
+    title: jq(.return."rss-reader".Channel.Items[0].Title)
+    format: jq(.format // "html")
+  transition: get-summary
+
+# get summary of the new page
+- id: get-summary
+  type: action
+  action:
+    function: summary
+    input: 
+      url: jq(.news)
+  transform:
+    excerpt: jq(.return.htmlsummary.excerpt)
+    text: jq(.return.htmlsummary.text)
+    news: jq(.news)
+    title: jq(.title)
+    format: jq(.format)
+  transition: gen-html
+
+# generate base html. used for pdf transform or direct delivery
+- id: gen-html
+  type: setter
+  variables:
+  - key: news.html
+    scope: workflow
+    mimeType: text/plain
+    value: |-
+      <h1>jq(.title)</h1>
+      
+      <h3><i>jq(.excerpt)</i></h3>
+  transition: check-format
+
+# check if pdf was requested
+- id: check-format
+  type: switch
+  defaultTransition: deliver-content
+  conditions:
+  - condition: jq(.format == "pdf")
+    transition: gen-pdf
+
+# generates pdf if requested
+- id: gen-pdf
+  type: action
+  action:
+    function: pandoc
+    files:
+    - key: news.html
+      scope: workflow
+    input: 
+      from: html
+      to: pdf
+      input: news.html
+      output:
+        scope: workflow
+        name: news.html
+  transition: deliver-content
+
+# delivers the content, html and pdf
+- id: deliver-content
+  type: getter  
+  variables:
+  - key: news.html
+    scope: workflow
+  transform:
+    news: jq(.var."news.html")

@@ -1,0 +1,53 @@
+functions:
+- id: replicate
+  image: gcr.io/direktiv/functions/replicate:1.0
+  type: knative-workflow
+- id: poll
+  workflow: image-poll
+  type: subflow
+
+states:
+
+# replicate model and version is required
+# test if for generating the image
+- id: validate
+  type: validate
+  schema:
+    title: Image
+    type: object
+    required: ["model", "version", "text"]
+    properties:
+      model:
+        type: string
+      version:
+        type: string
+      text:
+        type: string
+  transition: replicate
+
+# call replicate and generate the image
+- id: replicate
+  type: action
+  action:
+    function: replicate
+    secrets: ["replicate"]
+    input:
+      debug: true 
+      model: jq(.model)
+      version: jq(.version)
+      api-key: jq(.secrets.replicate)
+      input:
+        prompt: jq(.text)
+  transition: poll
+
+# poll the url we got from replicate
+- id: poll
+  type: action
+  action:
+    function: poll
+    input:
+      url: jq(.return.replicate.urls.get)
+    retries:
+      max_attempts: 30
+      delay: PT5S
+      codes: [".*"]
