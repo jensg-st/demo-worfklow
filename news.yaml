@@ -56,8 +56,7 @@ states:
     mimeType: text/plain
     value: |-
       <h1>jq(.title)</h1>
-      
-      <h3><i>jq(.excerpt)</i></h3>
+
   transition: check-format
 
 # check if pdf was requested
@@ -93,3 +92,16 @@ states:
     scope: workflow
   transform:
     news: jq(.var."news.html")
+    format: jq(.format)
+  transition: event
+
+- id: event
+  type: generateEvent
+  event:
+    type: content
+    source: dad
+    data: 
+      to: gerke74@gmail.com
+      attach: jq(.news)
+      format: jq(.format)
+    datacontenttype: application/json

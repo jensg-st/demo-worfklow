@@ -1,0 +1,62 @@
+functions:
+- id: sendmail
+  image: gcr.io/direktiv/functions/sendmail:1.0
+  type: knative-workflow
+
+# this workflow waits for events to come in 
+start:
+  type: event
+  state: validate-event
+  event:
+    type: content
+
+states:
+
+# format the event data
+- id: validate-event
+  type: noop
+  log: got event
+  transform:
+    to: jq(.content.data.to)
+    attachment: jq(.content.data.attach)
+    format: jq(.content.data.format)
+  transition: store
+
+# set the attachment
+- id: store
+  type: setter
+  variables:
+  - key: attachment
+    scope: workflow
+    mimeType: application/octet-stream
+    value: jq(.attachment)
+  transition: email
+
+# send email
+- id: email
+  type: action
+  action:
+    function: sendmail
+    secrets: ["smtp"]
+    files:
+    - key: attachment
+      scope: workflow
+      as: attachment.jq(.format)
+    input: 
+      smtp:
+        server: smtp.sendgrid.net:587
+        user: apikey
+        password: jq(.secrets.smtp)
+      emails:
+      - from: Jens Gerke<jens.gerke@direktiv.io>
+        to:
+        - jq(.to) 
+        subject: This is an email
+        attachments: jq(if .format == "pdf" then ["attachment.pdf"] else [] end)
+        message:  
+          name: message
+          data: |
+            Hello,
+
+            look at this.
+

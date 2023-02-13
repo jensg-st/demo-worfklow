@@ -85,3 +85,15 @@ states:
     scope: workflow
   transform: 
     pic: jq(.var."image2.png")
+
+
+- id: event
+  type: generateEvent
+  event:
+    type: content
+    source: dad
+    data: 
+      to: gerke74@gmail.com
+      attach: jq(.var."image2.png")
+    datacontenttype: application/json
+
