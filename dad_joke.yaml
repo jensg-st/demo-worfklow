@@ -85,7 +85,7 @@ states:
     scope: workflow
   transform: 
     pic: jq(.var."image2.png")
-
+  transition: event
 
 - id: event
   type: generateEvent

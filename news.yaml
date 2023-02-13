@@ -57,6 +57,10 @@ states:
     value: |-
       <h1>jq(.title)</h1>
 
+      <h2>jq(.excerpt)</h2>
+
+      jq(.text)
+
   transition: check-format
 
 # check if pdf was requested
