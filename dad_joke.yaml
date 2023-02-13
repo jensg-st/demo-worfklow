@@ -94,7 +94,7 @@ states:
     source: dad
     data: 
       to: gerke74@gmail.com
-      attach: jq(.var."image2.png")
+      attach: jq(.pic)
       format: png
     datacontenttype: application/json
 

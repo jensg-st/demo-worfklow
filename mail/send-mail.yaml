@@ -52,7 +52,7 @@ states:
         to:
         - jq(.to) 
         subject: This is an email
-        attachments: jq(if .format == "pdf" then ["attachment.pdf"] else [] end)
+        attachments: jq(if .format == "pdf" then ["attachment.pdf"] elif .format == "png" then ["attachment.png"]  else [] end)
         message:  
           name: message
           data: |
