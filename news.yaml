@@ -103,7 +103,7 @@ states:
   type: generateEvent
   event:
     type: content
-    source: dad
+    source: news
     data: 
       to: gerke74@gmail.com
       attach: jq(.news)
